@@ -29,3 +29,5 @@ Thumbs.db
 
 # Sequelize
 *.sqlite
+
+MEEROW_SPEC.md
