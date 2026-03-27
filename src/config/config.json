@@ -1,0 +1,26 @@
+{
+  "development": {
+    "username": "root",
+    "password": "3429",
+    "database": "meerow_dev",
+    "host": "localhost",
+    "port": 3306,
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "root",
+    "password": "yourpassword",
+    "database": "meerow_test",
+    "host": "127.0.0.1",
+    "port": 3306,
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": "yourpassword",
+    "database": "meerow_prod",
+    "host": "127.0.0.1",
+    "port": 3306,
+    "dialect": "mysql"
+  }
+}
