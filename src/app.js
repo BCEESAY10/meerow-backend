@@ -2,7 +2,12 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require("morgan");
+const passport = require("passport");
 const env = require("./config/env");
+const errorHandler = require("./middlewares/errorHandler");
+
+// Initialize Passport
+require("./config/passport");
 
 // Create Express app
 const app = express();
@@ -24,6 +29,9 @@ app.use(morgan("combined"));
 // Body parser middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Passport middleware
+app.use(passport.initialize());
 
 // Request logging middleware for debugging
 app.use((req, res, next) => {
@@ -48,19 +56,7 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error("Error:", err);
-
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-
-  res.status(status).json({
-    success: false,
-    message,
-    data: null,
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-  });
-});
+// Global error handler (must be last)
+app.use(errorHandler);
 
 module.exports = app;
