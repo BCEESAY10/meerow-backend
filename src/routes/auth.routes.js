@@ -1,27 +1,33 @@
 const express = require("express");
+const passport = require("passport");
+const authController = require("../controllers/auth.controller");
+const authenticate = require("../middlewares/authenticate");
 
 const router = express.Router();
 
-// Placeholder routes - to be implemented in Phase 2 (Authentication)
+// Public routes
+router.post("/register", authController.register);
+router.post("/login", authController.login);
+router.post("/logout", authController.logout);
 
-router.post("/register", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Protected routes
+router.get("/me", authenticate, authController.me);
 
-router.post("/login", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Google OAuth routes
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  }),
+);
 
-router.get("/me", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-router.get("/google", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-router.get("/google/callback", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "/auth/login",
+    session: false,
+  }),
+  authController.googleCallback,
+);
 
 module.exports = router;
