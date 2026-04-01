@@ -11,10 +11,6 @@ module.exports = {
       story_id: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: "Stories",
-          key: "id",
-        },
       },
       episode_number: {
         type: Sequelize.INTEGER,
@@ -44,10 +40,6 @@ module.exports = {
       reviewed_by: {
         type: Sequelize.UUID,
         allowNull: true,
-        references: {
-          model: "Users",
-          key: "id",
-        },
       },
       reviewed_at: {
         type: Sequelize.DATE,

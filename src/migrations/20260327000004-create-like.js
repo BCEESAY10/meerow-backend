@@ -11,32 +11,14 @@ module.exports = {
       user_id: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
       },
       story_id: {
         type: Sequelize.UUID,
         allowNull: true,
-        references: {
-          model: "Stories",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
       },
       episode_id: {
         type: Sequelize.UUID,
         allowNull: true,
-        references: {
-          model: "Episodes",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
       },
       created_at: {
         type: Sequelize.DATE,

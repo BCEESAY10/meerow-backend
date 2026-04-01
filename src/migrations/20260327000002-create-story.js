@@ -11,10 +11,6 @@ module.exports = {
       author_id: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
       },
       title: {
         type: Sequelize.STRING,
@@ -72,10 +68,6 @@ module.exports = {
       reviewed_by: {
         type: Sequelize.UUID,
         allowNull: true,
-        references: {
-          model: "Users",
-          key: "id",
-        },
       },
       reviewed_at: {
         type: Sequelize.DATE,

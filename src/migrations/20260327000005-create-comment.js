@@ -11,26 +11,14 @@ module.exports = {
       user_id: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
       },
       story_id: {
         type: Sequelize.UUID,
         allowNull: true,
-        references: {
-          model: "Stories",
-          key: "id",
-        },
       },
       episode_id: {
         type: Sequelize.UUID,
         allowNull: true,
-        references: {
-          model: "Episodes",
-          key: "id",
-        },
       },
       content: {
         type: Sequelize.TEXT,
