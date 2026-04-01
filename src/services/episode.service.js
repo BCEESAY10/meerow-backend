@@ -1,0 +1,233 @@
+const { Episode, Story, User } = require("../models");
+const { calculateReadTime } = require("../utils/readTime");
+
+// Create a new episode
+const createEpisode = async (storyId, authorId, episodeData) => {
+  try {
+    const { title, episode_number, content } = episodeData;
+
+    // Verify story exists and belongs to author
+    const story = await Story.findOne({
+      where: { id: storyId, author_id: authorId, is_episodic: true },
+    });
+
+    if (!story) {
+      const error = new Error("Story not found or is not episodic");
+      error.status = 404;
+      throw error;
+    }
+
+    // Check if episode number already exists
+    const existingEpisode = await Episode.findOne({
+      where: { story_id: storyId, episode_number },
+    });
+
+    if (existingEpisode) {
+      const error = new Error(`Episode ${episode_number} already exists`);
+      error.status = 400;
+      throw error;
+    }
+
+    // Calculate read time
+    const readTime = calculateReadTime(content);
+
+    const episode = await Episode.create({
+      story_id: storyId,
+      title,
+      episode_number,
+      content,
+      read_time_minutes: readTime,
+      status: "pending",
+    });
+
+    return episode;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get episode by ID
+const getEpisodeById = async (episodeId) => {
+  try {
+    const episode = await Episode.findByPk(episodeId, {
+      include: [
+        {
+          model: Story,
+          as: "story",
+          attributes: ["id", "title", "slug", "author_id"],
+          include: [
+            {
+              model: User,
+              as: "author",
+              attributes: ["id", "name"],
+            },
+          ],
+        },
+      ],
+    });
+
+    return episode;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get approved episodes for a story
+const getEpisodesByStoryId = async (storyId, page = 1, limit = 20) => {
+  try {
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Episode.findAndCountAll({
+      where: { story_id: storyId, status: "approved" },
+      offset,
+      limit,
+      order: [["episode_number", "ASC"]],
+    });
+
+    return {
+      total: count,
+      episodes: rows,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get all episodes for a story (for author - includes all statuses)
+const getEpisodesByStoryIdForAuthor = async (storyId, authorId) => {
+  try {
+    // Verify author owns the story
+    const story = await Story.findOne({
+      where: { id: storyId, author_id: authorId },
+    });
+
+    if (!story) {
+      const error = new Error("Story not found or you do not have permission");
+      error.status = 404;
+      throw error;
+    }
+
+    const episodes = await Episode.findAll({
+      where: { story_id: storyId },
+      order: [["episode_number", "ASC"]],
+    });
+
+    return episodes;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Update episode (only if pending or rejected)
+const updateEpisode = async (episodeId, authorId, updateData) => {
+  try {
+    const episode = await Episode.findByPk(episodeId, {
+      include: [
+        {
+          model: Story,
+          as: "story",
+          attributes: ["id", "author_id"],
+        },
+      ],
+    });
+
+    if (!episode || episode.story.author_id !== authorId) {
+      const error = new Error(
+        "Episode not found or you do not have permission",
+      );
+      error.status = 404;
+      throw error;
+    }
+
+    // Can only edit pending or rejected episodes
+    if (!["pending", "rejected"].includes(episode.status)) {
+      const error = new Error("Can only edit pending or rejected episodes");
+      error.status = 400;
+      throw error;
+    }
+
+    const { title, episode_number, content } = updateData;
+
+    // Check if new episode number conflicts with existing
+    if (episode_number && episode_number !== episode.episode_number) {
+      const conflict = await Episode.findOne({
+        where: {
+          story_id: episode.story_id,
+          episode_number,
+          id: { [require("sequelize").Op.ne]: episodeId },
+        },
+      });
+
+      if (conflict) {
+        const error = new Error(`Episode ${episode_number} already exists`);
+        error.status = 400;
+        throw error;
+      }
+    }
+
+    // Update read time if content changed
+    let readTime = episode.read_time_minutes;
+    if (content) {
+      readTime = calculateReadTime(content);
+    }
+
+    await episode.update({
+      title: title || episode.title,
+      episode_number: episode_number || episode.episode_number,
+      content: content || episode.content,
+      read_time_minutes: readTime,
+      status: "pending", // Reset to pending on resubmit
+      rejection_reason: null,
+    });
+
+    return episode;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Delete episode (only if pending or rejected)
+const deleteEpisode = async (episodeId, authorId) => {
+  try {
+    const episode = await Episode.findByPk(episodeId, {
+      include: [
+        {
+          model: Story,
+          as: "story",
+          attributes: ["id", "author_id"],
+        },
+      ],
+    });
+
+    if (!episode || episode.story.author_id !== authorId) {
+      const error = new Error(
+        "Episode not found or you do not have permission",
+      );
+      error.status = 404;
+      throw error;
+    }
+
+    if (!["pending", "rejected"].includes(episode.status)) {
+      const error = new Error("Can only delete pending or rejected episodes");
+      error.status = 400;
+      throw error;
+    }
+
+    await episode.destroy();
+    return { message: "Episode deleted successfully" };
+  } catch (error) {
+    throw error;
+  }
+};
+
+module.exports = {
+  createEpisode,
+  getEpisodeById,
+  getEpisodesByStoryId,
+  getEpisodesByStoryIdForAuthor,
+  updateEpisode,
+  deleteEpisode,
+};
