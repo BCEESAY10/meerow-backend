@@ -1,0 +1,188 @@
+const storyService = require("../services/story.service");
+const { validateStory } = require("../validators/story.validator");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
+const {
+  buildPaginationParams,
+  buildPaginationMeta,
+} = require("../utils/pagination");
+
+// Create new story
+const createStory = async (req, res, next) => {
+  try {
+    const { title, synopsis, genre, is_episodic, content } = req.body;
+    const authorId = req.user.id;
+
+    // Validate request
+    const { error, value } = validateStory({
+      title,
+      synopsis,
+      genre,
+      is_episodic,
+      content,
+    });
+
+    if (error) {
+      return errorResponse(res, error.details[0].message, 400);
+    }
+
+    const story = await storyService.createStory(authorId, value);
+
+    return successResponse(res, story, "Story created successfully", 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get story by slug (for reading)
+const getStoryBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+
+    const story = await storyService.getStoryBySlug(slug);
+
+    if (!story) {
+      return errorResponse(res, "Story not found", 404);
+    }
+
+    return successResponse(res, story, "Story retrieved successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// List approved stories with filters
+const listStories = async (req, res, next) => {
+  try {
+    const { page, limit, genre, author, title, sort } = req.query;
+
+    const { page: pageNum, limit: limitNum } = buildPaginationParams(
+      page,
+      limit,
+    );
+
+    const result = await storyService.listStories({
+      page: pageNum,
+      limit: limitNum,
+      genre,
+      author,
+      title,
+      sort,
+    });
+
+    const meta = buildPaginationMeta(
+      result.stories,
+      (pageNum - 1) * limitNum,
+      limitNum,
+      result.total,
+    );
+
+    return successResponse(
+      res,
+      result.stories,
+      "Stories retrieved successfully",
+      200,
+      meta,
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get author's own stories
+const getAuthorStories = async (req, res, next) => {
+  try {
+    const { page, limit } = req.query;
+    const authorId = req.user.id;
+
+    const { page: pageNum, limit: limitNum } = buildPaginationParams(
+      page,
+      limit,
+    );
+
+    const result = await storyService.getAuthorStories(
+      authorId,
+      pageNum,
+      limitNum,
+    );
+
+    const meta = buildPaginationMeta(
+      result.stories,
+      (pageNum - 1) * limitNum,
+      limitNum,
+      result.total,
+    );
+
+    return successResponse(
+      res,
+      result.stories,
+      "Your stories retrieved successfully",
+      200,
+      meta,
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update story
+const updateStory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const authorId = req.user.id;
+    const { title, synopsis, genre, content } = req.body;
+
+    // Validate request
+    const { error, value } = validateStory({
+      title,
+      synopsis,
+      genre,
+      is_episodic: false, // Doesn't validate content requirement strictly for update
+      content,
+    });
+
+    if (error) {
+      return errorResponse(res, error.details[0].message, 400);
+    }
+
+    const story = await storyService.updateStory(id, authorId, value);
+
+    return successResponse(res, story, "Story updated successfully");
+  } catch (error) {
+    if (error.status === 404) {
+      return errorResponse(res, error.message, 404);
+    }
+    if (error.status === 400) {
+      return errorResponse(res, error.message, 400);
+    }
+    next(error);
+  }
+};
+
+// Delete story
+const deleteStory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const authorId = req.user.id;
+
+    const result = await storyService.deleteStory(id, authorId);
+
+    return successResponse(res, result, "Story deleted successfully");
+  } catch (error) {
+    if (error.status === 404) {
+      return errorResponse(res, error.message, 404);
+    }
+    if (error.status === 400) {
+      return errorResponse(res, error.message, 400);
+    }
+    next(error);
+  }
+};
+
+module.exports = {
+  createStory,
+  getStoryBySlug,
+  listStories,
+  getAuthorStories,
+  updateStory,
+  deleteStory,
+};
