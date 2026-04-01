@@ -1,52 +1,43 @@
 const express = require("express");
+const storyController = require("../controllers/story.controller");
+const episodeController = require("../controllers/episode.controller");
+const authenticate = require("../middlewares/authenticate");
 
 const router = express.Router();
 
-// Placeholder routes - to be implemented in Phase 3 (Content Management)
+// Public routes - List all approved stories
+router.get("/", storyController.listStories);
 
-router.get("/", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Public route - Get single story by slug (for reading)
+router.get("/:slug", storyController.getStoryBySlug);
 
-router.get("/:slug", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Protected routes - Author story management
+router.post("/", authenticate, storyController.createStory);
+router.put("/:id", authenticate, storyController.updateStory);
+router.delete("/:id", authenticate, storyController.deleteStory);
 
-router.post("/", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Protected route - Get own stories
+router.get("/me/stories", authenticate, storyController.getAuthorStories);
 
-router.put("/:id", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Episode routes - Public (approved episodes only)
+router.get("/:storyId/episodes", episodeController.getEpisodesByStory);
+router.get("/:storyId/episodes/:episodeId", episodeController.getEpisodeById);
 
-router.delete("/:id", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-router.get("/me/stories", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-// Episode routes
-router.get("/:storyId/episodes", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-router.get("/:storyId/episodes/:episodeId", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-router.post("/:storyId/episodes", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-router.put("/:storyId/episodes/:episodeId", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
-
-router.delete("/:storyId/episodes/:episodeId", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Episode routes - Protected (author only)
+router.post(
+  "/:storyId/episodes",
+  authenticate,
+  episodeController.createEpisode,
+);
+router.put(
+  "/:storyId/episodes/:episodeId",
+  authenticate,
+  episodeController.updateEpisode,
+);
+router.delete(
+  "/:storyId/episodes/:episodeId",
+  authenticate,
+  episodeController.deleteEpisode,
+);
 
 module.exports = router;
