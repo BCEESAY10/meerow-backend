@@ -1,19 +1,22 @@
 const express = require("express");
+const authenticate = require("../middlewares/authenticate");
+const commentController = require("../controllers/comment.controller");
 
 const router = express.Router();
 
-// Placeholder routes - to be implemented in Phase 4 (Reactions)
+// Get comments for content with pagination
+router.get("/", commentController.getCommentsByContent);
 
-router.get("/", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Get single comment
+router.get("/:commentId", commentController.getCommentById);
 
-router.post("/", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Create comment
+router.post("/", authenticate, commentController.createComment);
 
-router.delete("/:id", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Update comment
+router.put("/:commentId", authenticate, commentController.updateComment);
+
+// Delete comment
+router.delete("/:commentId", authenticate, commentController.deleteComment);
 
 module.exports = router;
