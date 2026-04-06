@@ -1,23 +1,42 @@
 const express = require("express");
+const authenticate = require("../middlewares/authenticate");
+const authorize = require("../middlewares/authorize");
+const adminController = require("../controllers/admin.controller");
 
 const router = express.Router();
 
-// Placeholder routes - to be implemented in Phase 5 (Admin Features)
+// All admin routes require authentication and admin role
 
-router.get("/queue", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Get moderation queue (all pending items)
+router.get(
+  "/queue",
+  authenticate,
+  authorize("admin"),
+  adminController.getQueue,
+);
 
-router.get("/queue/:type/:id", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Get single item from queue for detailed review
+router.get(
+  "/queue/:type/:id",
+  authenticate,
+  authorize("admin"),
+  adminController.getQueueItem,
+);
 
-router.patch("/approve/:type/:id", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Approve a story or episode
+router.patch(
+  "/approve/:type/:id",
+  authenticate,
+  authorize("admin"),
+  adminController.approveContent,
+);
 
-router.patch("/reject/:type/:id", (req, res) => {
-  res.status(501).json({ success: false, message: "Not implemented yet" });
-});
+// Reject a story or episode with reason
+router.patch(
+  "/reject/:type/:id",
+  authenticate,
+  authorize("admin"),
+  adminController.rejectContent,
+);
 
 module.exports = router;
