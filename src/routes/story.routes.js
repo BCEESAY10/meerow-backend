@@ -13,6 +13,25 @@ router.get("/me", authenticate, storyController.getAuthorStories);
 
 // Protected routes - Author story management
 router.post("/", authenticate, storyController.createStory);
+
+// Handle GET story by ID (authenticated, any status) or slug (public, approved only)
+router.get(
+  "/:idOrSlug",
+  (req, res, next) => {
+    // Check if it looks like a UUID
+    const uuidRegex =
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+    if (uuidRegex.test(req.params.idOrSlug)) {
+      // UUID - require authentication
+      authenticate(req, res, next);
+    } else {
+      // Slug - proceed without authentication
+      next();
+    }
+  },
+  storyController.handleGetStory,
+);
+
 router.put("/:id", authenticate, storyController.updateStory);
 router.delete("/:id", authenticate, storyController.deleteStory);
 

@@ -124,6 +124,75 @@ const getAuthorStories = async (req, res, next) => {
   }
 };
 
+// Handle GET story by ID (for author) or slug (for public)
+const handleGetStory = async (req, res, next) => {
+  try {
+    const { idOrSlug } = req.params;
+    const userId = req.user?.id;
+
+    // UUID regex pattern
+    const uuidRegex =
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+    const isUUID = uuidRegex.test(idOrSlug);
+
+    // If it's a UUID and user is authenticated, treat as story ID
+    if (isUUID && userId) {
+      const story = await storyService.getStoryById(idOrSlug);
+
+      if (!story) {
+        return errorResponse(res, "Story not found", 404);
+      }
+
+      if (story.author_id !== userId) {
+        return errorResponse(
+          res,
+          "You do not have permission to view this story",
+          403,
+        );
+      }
+
+      return successResponse(res, story, "Story retrieved successfully");
+    }
+
+    // Otherwise, treat as slug (public, approved only)
+    const story = await storyService.getStoryBySlug(idOrSlug);
+
+    if (!story) {
+      return errorResponse(res, "Story not found", 404);
+    }
+
+    return successResponse(res, story, "Story retrieved successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get story by ID for author (to view rejection reason and edit)
+const getStoryById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const authorId = req.user.id;
+
+    const story = await storyService.getStoryById(id);
+
+    if (!story) {
+      return errorResponse(res, "Story not found", 404);
+    }
+
+    if (story.author_id !== authorId) {
+      return errorResponse(
+        res,
+        "You do not have permission to view this story",
+        403,
+      );
+    }
+
+    return successResponse(res, story, "Story retrieved successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Update story
 const updateStory = async (req, res, next) => {
   try {
@@ -183,6 +252,8 @@ module.exports = {
   getStoryBySlug,
   listStories,
   getAuthorStories,
+  handleGetStory,
+  getStoryById,
   updateStory,
   deleteStory,
 };
