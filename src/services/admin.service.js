@@ -241,9 +241,71 @@ const rejectContent = async (type, id, adminId, rejectionReason) => {
   }
 };
 
+// Edit pending story or episode (admin corrections)
+const editContent = async (type, id, updates) => {
+  try {
+    if (!["story", "episode"].includes(type)) {
+      const error = new Error(
+        'Invalid content type. Must be "story" or "episode"',
+      );
+      error.status = 400;
+      throw error;
+    }
+
+    if (!updates || Object.keys(updates).length === 0) {
+      const error = new Error("At least one field must be provided for update");
+      error.status = 400;
+      throw error;
+    }
+
+    const model = type === "story" ? Story : Episode;
+
+    // Check if content exists and is pending
+    const content = await model.findByPk(id);
+    if (!content) {
+      const error = new Error(
+        `${type.charAt(0).toUpperCase() + type.slice(1)} not found`,
+      );
+      error.status = 404;
+      throw error;
+    }
+
+    if (content.status !== "pending") {
+      const error = new Error(`Cannot edit a ${type} that is not pending`);
+      error.status = 400;
+      throw error;
+    }
+
+    // Update allowed fields only
+    const allowedFields =
+      type === "story" ? ["title", "synopsis", "genre"] : ["title", "content"];
+
+    const sanitizedUpdates = {};
+    allowedFields.forEach((field) => {
+      if (field in updates && updates[field] !== undefined) {
+        sanitizedUpdates[field] = updates[field];
+      }
+    });
+
+    if (Object.keys(sanitizedUpdates).length === 0) {
+      const error = new Error("No valid fields provided for update");
+      error.status = 400;
+      throw error;
+    }
+
+    // Update content
+    await content.update(sanitizedUpdates);
+
+    return content;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   getQueue,
   getQueueItem,
   approveContent,
   rejectContent,
+  editContent,
 };

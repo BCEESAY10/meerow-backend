@@ -2,6 +2,8 @@ const adminService = require("../services/admin.service");
 const {
   rejectValidator,
   queueItemValidator,
+  editStoryValidator,
+  editEpisodeValidator,
 } = require("../validators/admin.validator");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 
@@ -151,9 +153,55 @@ const rejectContent = async (req, res) => {
   }
 };
 
+// Edit pending story or episode (admin corrections)
+const editContent = async (req, res) => {
+  try {
+    const { type, id } = req.params;
+
+    const { error: typeError } = queueItemValidator.validate({ type, id });
+    if (typeError) {
+      return errorResponse(
+        res,
+        typeError.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? typeError : undefined,
+      );
+    }
+
+    const validator =
+      type === "story" ? editStoryValidator : editEpisodeValidator;
+    const { error: bodyError, value } = validator.validate(req.body);
+    if (bodyError) {
+      return errorResponse(
+        res,
+        bodyError.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? bodyError : undefined,
+      );
+    }
+
+    const content = await adminService.editContent(type, id, value);
+
+    return successResponse(
+      res,
+      content,
+      `${type.charAt(0).toUpperCase() + type.slice(1)} updated successfully`,
+    );
+  } catch (error) {
+    const status = error.status || 500;
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
+  }
+};
+
 module.exports = {
   getQueue,
   getQueueItem,
   approveContent,
   rejectContent,
+  editContent,
 };

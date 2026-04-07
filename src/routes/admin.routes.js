@@ -39,4 +39,12 @@ router.patch(
   adminController.rejectContent,
 );
 
+// Edit pending story or episode (admin corrections)
+router.patch(
+  "/queue/:type/:id",
+  authenticate,
+  authorize("admin"),
+  adminController.editContent,
+);
+
 module.exports = router;
