@@ -8,16 +8,16 @@ const router = express.Router();
 // Public routes - List all approved stories
 router.get("/", storyController.listStories);
 
-// Public route - Get single story by slug (for reading)
-router.get("/:slug", storyController.getStoryBySlug);
+// Protected route - Get own stories (must be before /:slug to avoid matching "me" as slug)
+router.get("/me", authenticate, storyController.getAuthorStories);
 
 // Protected routes - Author story management
 router.post("/", authenticate, storyController.createStory);
 router.put("/:id", authenticate, storyController.updateStory);
 router.delete("/:id", authenticate, storyController.deleteStory);
 
-// Protected route - Get own stories
-router.get("/me/stories", authenticate, storyController.getAuthorStories);
+// Public route - Get single story by slug (for reading) - must be last
+router.get("/:slug", storyController.getStoryBySlug);
 
 // Episode routes - Public (approved episodes only)
 router.get("/:storyId/episodes", episodeController.getEpisodesByStory);
