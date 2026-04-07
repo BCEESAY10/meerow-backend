@@ -12,27 +12,30 @@ const getQueue = async (req, res) => {
 
     const result = await adminService.getQueue(parseInt(page), parseInt(limit));
 
-    return res.status(200).json(
-      successResponse(result.queue, "Moderation queue retrieved successfully", {
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        totalPages: result.totalPages,
-        storyCount: result.storyCount,
-        episodeCount: result.episodeCount,
-      }),
+    const meta = {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+      storyCount: result.storyCount,
+      episodeCount: result.episodeCount,
+    };
+
+    return successResponse(
+      res,
+      result.queue,
+      "Moderation queue retrieved successfully",
+      200,
+      meta,
     );
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -43,33 +46,25 @@ const getQueueItem = async (req, res) => {
 
     const { error } = queueItemValidator.validate({ type, id });
     if (error) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            error.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? error : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        error.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? error : undefined,
+      );
     }
 
     const content = await adminService.getQueueItem(type, id);
 
-    return res
-      .status(200)
-      .json(successResponse(content, "Queue item retrieved successfully"));
+    return successResponse(res, content, "Queue item retrieved successfully");
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -81,38 +76,29 @@ const approveContent = async (req, res) => {
 
     const { error } = queueItemValidator.validate({ type, id });
     if (error) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            error.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? error : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        error.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? error : undefined,
+      );
     }
 
     const content = await adminService.approveContent(type, id, adminId);
 
-    return res
-      .status(200)
-      .json(
-        successResponse(
-          content,
-          `${type.charAt(0).toUpperCase() + type.slice(1)} approved successfully`,
-        ),
-      );
+    return successResponse(
+      res,
+      content,
+      `${type.charAt(0).toUpperCase() + type.slice(1)} approved successfully`,
+    );
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -124,28 +110,22 @@ const rejectContent = async (req, res) => {
 
     const { error: typeError } = queueItemValidator.validate({ type, id });
     if (typeError) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            typeError.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? typeError : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        typeError.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? typeError : undefined,
+      );
     }
 
     const { error: bodyError, value } = rejectValidator.validate(req.body);
     if (bodyError) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            bodyError.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? bodyError : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        bodyError.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? bodyError : undefined,
+      );
     }
 
     const content = await adminService.rejectContent(
@@ -155,25 +135,19 @@ const rejectContent = async (req, res) => {
       value.rejection_reason,
     );
 
-    return res
-      .status(200)
-      .json(
-        successResponse(
-          content,
-          `${type.charAt(0).toUpperCase() + type.slice(1)} rejected successfully`,
-        ),
-      );
+    return successResponse(
+      res,
+      content,
+      `${type.charAt(0).toUpperCase() + type.slice(1)} rejected successfully`,
+    );
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 

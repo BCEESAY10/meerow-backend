@@ -39,16 +39,17 @@ const getQueue = async (page = 1, limit = 10) => {
           "status",
           "created_at",
           "story_id",
-          "author_id",
         ],
         include: [
           {
-            association: "author",
-            attributes: ["id", "name", "email"],
-          },
-          {
             association: "story",
             attributes: ["id", "title"],
+            include: [
+              {
+                association: "author",
+                attributes: ["id", "name", "email"],
+              },
+            ],
           },
         ],
         order: [["created_at", "ASC"]],
@@ -123,12 +124,14 @@ const getQueueItem = async (type, id) => {
         where: { id, status: "pending" },
         include: [
           {
-            association: "author",
-            attributes: ["id", "name", "email"],
-          },
-          {
             association: "story",
             attributes: ["id", "title", "genre"],
+            include: [
+              {
+                association: "author",
+                attributes: ["id", "name", "email"],
+              },
+            ],
           },
         ],
       });
