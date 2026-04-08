@@ -12,15 +12,15 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
       },
-      story_id: {
+      content_id: {
         type: Sequelize.UUID,
-        allowNull: true,
+        allowNull: false,
       },
-      episode_id: {
-        type: Sequelize.UUID,
-        allowNull: true,
+      content_type: {
+        type: Sequelize.ENUM("story", "episode"),
+        allowNull: false,
       },
-      content: {
+      body: {
         type: Sequelize.TEXT,
         allowNull: false,
       },

@@ -1,10 +1,58 @@
 const episodeService = require("../services/episode.service");
+const likeService = require("../services/like.service");
 const { validateEpisode } = require("../validators/episode.validator");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 const {
   buildPaginationParams,
   buildPaginationMeta,
 } = require("../utils/pagination");
+
+// Helper function to augment a single episode with like metadata
+const augmentEpisodeWithLikes = async (episode, userId) => {
+  if (!episode) return episode;
+
+  const episodeData = episode.toJSON ? episode.toJSON() : episode;
+  const episodeId = episodeData.id || episode.id; // Ensure we get the ID from episodeData
+  const likeCount = await likeService.getLikeCount(episodeId, "episode");
+  const userHasLiked = userId
+    ? await likeService.hasUserLiked(userId, episodeId, "episode")
+    : false;
+
+  console.log("[DEBUG] augmentEpisodeWithLikes:", {
+    episodeId,
+    userId,
+    likeCount,
+    userHasLiked,
+  });
+
+  return {
+    ...episodeData,
+    likeCount,
+    userHasLiked,
+  };
+};
+
+// Helper function to augment array of episodes with like metadata
+const augmentEpisodesWithLikes = async (episodes, userId) => {
+  if (!Array.isArray(episodes)) return episodes;
+
+  return Promise.all(
+    episodes.map(async (episode) => {
+      const episodeData = episode.toJSON ? episode.toJSON() : episode;
+      const episodeId = episodeData.id || episode.id; // Ensure we get the ID from episodeData
+      const likeCount = await likeService.getLikeCount(episodeId, "episode");
+      const userHasLiked = userId
+        ? await likeService.hasUserLiked(userId, episodeId, "episode")
+        : false;
+
+      return {
+        ...episodeData,
+        likeCount,
+        userHasLiked,
+      };
+    }),
+  );
+};
 
 // Create new episode
 const createEpisode = async (req, res, next) => {
@@ -30,7 +78,13 @@ const createEpisode = async (req, res, next) => {
       value,
     );
 
-    return successResponse(res, episode, "Episode created successfully", 201);
+    const episodeWithLikes = await augmentEpisodeWithLikes(episode, authorId);
+    return successResponse(
+      res,
+      episodeWithLikes,
+      "Episode created successfully",
+      201,
+    );
   } catch (error) {
     if (error.status === 404) {
       return errorResponse(res, error.message, 404);
@@ -47,6 +101,7 @@ const getEpisodesByStory = async (req, res, next) => {
   try {
     const { storyId } = req.params;
     const { page, limit } = req.query;
+    const userId = req.user?.id;
 
     const { page: pageNum, limit: limitNum } = buildPaginationParams(
       page,
@@ -59,8 +114,13 @@ const getEpisodesByStory = async (req, res, next) => {
       limitNum,
     );
 
-    const meta = buildPaginationMeta(
+    const episodesWithLikes = await augmentEpisodesWithLikes(
       result.episodes,
+      userId,
+    );
+
+    const meta = buildPaginationMeta(
+      episodesWithLikes,
       (pageNum - 1) * limitNum,
       limitNum,
       result.total,
@@ -68,7 +128,7 @@ const getEpisodesByStory = async (req, res, next) => {
 
     return successResponse(
       res,
-      result.episodes,
+      episodesWithLikes,
       "Episodes retrieved successfully",
       200,
       meta,
@@ -82,6 +142,7 @@ const getEpisodesByStory = async (req, res, next) => {
 const getEpisodeById = async (req, res, next) => {
   try {
     const { episodeId } = req.params;
+    const userId = req.user?.id;
 
     const episode = await episodeService.getEpisodeById(episodeId);
 
@@ -89,7 +150,12 @@ const getEpisodeById = async (req, res, next) => {
       return errorResponse(res, "Episode not found", 404);
     }
 
-    return successResponse(res, episode, "Episode retrieved successfully");
+    const episodeWithLikes = await augmentEpisodeWithLikes(episode, userId);
+    return successResponse(
+      res,
+      episodeWithLikes,
+      "Episode retrieved successfully",
+    );
   } catch (error) {
     next(error);
   }
@@ -119,7 +185,12 @@ const updateEpisode = async (req, res, next) => {
       value,
     );
 
-    return successResponse(res, episode, "Episode updated successfully");
+    const episodeWithLikes = await augmentEpisodeWithLikes(episode, authorId);
+    return successResponse(
+      res,
+      episodeWithLikes,
+      "Episode updated successfully",
+    );
   } catch (error) {
     if (error.status === 404) {
       return errorResponse(res, error.message, 404);

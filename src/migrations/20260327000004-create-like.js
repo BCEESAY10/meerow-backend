@@ -12,38 +12,30 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
       },
-      story_id: {
+      content_id: {
         type: Sequelize.UUID,
-        allowNull: true,
+        allowNull: false,
       },
-      episode_id: {
-        type: Sequelize.UUID,
-        allowNull: true,
+      content_type: {
+        type: Sequelize.ENUM("story", "episode"),
+        allowNull: false,
       },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.NOW,
       },
-      updated_at: {
-        type: Sequelize.DATE,
-        allowNull: false,
-        defaultValue: Sequelize.NOW,
+    });
+
+    // Add single composite unique index
+    await queryInterface.addIndex(
+      "Likes",
+      ["user_id", "content_id", "content_type"],
+      {
+        unique: true,
+        name: "unique_user_content_like",
       },
-    });
-
-    // Add separate unique indices for story and episode likes
-    await queryInterface.addIndex("Likes", ["user_id", "story_id"], {
-      unique: true,
-      where: { story_id: { [Sequelize.Op.not]: null } },
-      name: "unique_user_story_like",
-    });
-
-    await queryInterface.addIndex("Likes", ["user_id", "episode_id"], {
-      unique: true,
-      where: { episode_id: { [Sequelize.Op.not]: null } },
-      name: "unique_user_episode_like",
-    });
+    );
   },
 
   async down(queryInterface, Sequelize) {
