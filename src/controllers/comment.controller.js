@@ -11,15 +11,12 @@ const createComment = async (req, res) => {
   try {
     const { error, value } = createCommentValidator.validate(req.body);
     if (error) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            error.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? error : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        error.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? error : undefined,
+      );
     }
 
     const { content_id, content_type, body } = value;
@@ -32,20 +29,15 @@ const createComment = async (req, res) => {
       body,
     );
 
-    return res
-      .status(201)
-      .json(successResponse(comment, "Comment created successfully"));
+    return successResponse(res, comment, "Comment created successfully", 201);
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -62,15 +54,12 @@ const getCommentsByContent = async (req, res) => {
     });
 
     if (error) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            error.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? error : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        error.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? error : undefined,
+      );
     }
 
     const result = await commentService.getCommentsByContent(
@@ -80,25 +69,28 @@ const getCommentsByContent = async (req, res) => {
       value.limit,
     );
 
-    return res.status(200).json(
-      successResponse(result.comments, "Comments retrieved successfully", {
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        totalPages: result.totalPages,
-      }),
+    const meta = {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+    };
+
+    return successResponse(
+      res,
+      result.comments,
+      "Comments retrieved successfully",
+      200,
+      meta,
     );
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -110,23 +102,18 @@ const getCommentById = async (req, res) => {
     const comment = await commentService.getCommentById(commentId);
 
     if (!comment) {
-      return res.status(404).json(errorResponse("Comment not found", 404));
+      return errorResponse(res, "Comment not found", 404);
     }
 
-    return res
-      .status(200)
-      .json(successResponse(comment, "Comment retrieved successfully"));
+    return successResponse(res, comment, "Comment retrieved successfully", 200);
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -137,15 +124,12 @@ const updateComment = async (req, res) => {
     const { error, value } = updateCommentValidator.validate(req.body);
 
     if (error) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            error.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? error : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        error.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? error : undefined,
+      );
     }
 
     const userId = req.user.id;
@@ -155,20 +139,15 @@ const updateComment = async (req, res) => {
       value.body,
     );
 
-    return res
-      .status(200)
-      .json(successResponse(comment, "Comment updated successfully"));
+    return successResponse(res, comment, "Comment updated successfully", 200);
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -180,20 +159,15 @@ const deleteComment = async (req, res) => {
 
     await commentService.deleteComment(commentId, userId);
 
-    return res
-      .status(200)
-      .json(successResponse(null, "Comment deleted successfully"));
+    return successResponse(res, null, "Comment deleted successfully", 200);
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 

@@ -10,15 +10,12 @@ const likeContent = async (req, res) => {
   try {
     const { error, value } = likeValidator.validate(req.body);
     if (error) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            error.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? error : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        error.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? error : undefined,
+      );
     }
 
     const { content_id, content_type } = value;
@@ -30,20 +27,15 @@ const likeContent = async (req, res) => {
       content_type,
     );
 
-    return res
-      .status(201)
-      .json(successResponse(like, "Content liked successfully"));
+    return successResponse(res, like, "Content liked successfully", 201);
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -52,15 +44,12 @@ const unlikeContent = async (req, res) => {
   try {
     const { error, value } = unlikeValidator.validate(req.body);
     if (error) {
-      return res
-        .status(400)
-        .json(
-          errorResponse(
-            error.details[0].message,
-            400,
-            process.env.NODE_ENV === "development" ? error : undefined,
-          ),
-        );
+      return errorResponse(
+        res,
+        error.details[0].message,
+        400,
+        process.env.NODE_ENV === "development" ? error : undefined,
+      );
     }
 
     const { content_id, content_type } = value;
@@ -68,20 +57,15 @@ const unlikeContent = async (req, res) => {
 
     await likeService.unlikeContent(userId, content_id, content_type);
 
-    return res
-      .status(200)
-      .json(successResponse(null, "Content unliked successfully"));
+    return successResponse(res, null, "Content unliked successfully", 200);
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -91,15 +75,19 @@ const getLikesForContent = async (req, res) => {
     const { content_id, content_type, page = 1, limit = 10 } = req.query;
 
     if (!content_id || !content_type) {
-      return res
-        .status(400)
-        .json(errorResponse("content_id and content_type are required", 400));
+      return errorResponse(
+        res,
+        "content_id and content_type are required",
+        400,
+      );
     }
 
     if (!["story", "episode"].includes(content_type)) {
-      return res
-        .status(400)
-        .json(errorResponse('content_type must be "story" or "episode"', 400));
+      return errorResponse(
+        res,
+        'content_type must be "story" or "episode"',
+        400,
+      );
     }
 
     const result = await likeService.getLikesForContent(
@@ -109,25 +97,28 @@ const getLikesForContent = async (req, res) => {
       parseInt(limit),
     );
 
-    return res.status(200).json(
-      successResponse(result, "Likes retrieved successfully", {
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        totalPages: result.totalPages,
-      }),
+    const meta = {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+    };
+
+    return successResponse(
+      res,
+      result.likes,
+      "Likes retrieved successfully",
+      200,
+      meta,
     );
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
@@ -137,33 +128,37 @@ const getLikeCount = async (req, res) => {
     const { content_id, content_type } = req.query;
 
     if (!content_id || !content_type) {
-      return res
-        .status(400)
-        .json(errorResponse("content_id and content_type are required", 400));
+      return errorResponse(
+        res,
+        "content_id and content_type are required",
+        400,
+      );
     }
 
     if (!["story", "episode"].includes(content_type)) {
-      return res
-        .status(400)
-        .json(errorResponse('content_type must be "story" or "episode"', 400));
+      return errorResponse(
+        res,
+        'content_type must be "story" or "episode"',
+        400,
+      );
     }
 
     const count = await likeService.getLikeCount(content_id, content_type);
 
-    return res
-      .status(200)
-      .json(successResponse({ count }, "Like count retrieved successfully"));
+    return successResponse(
+      res,
+      { count },
+      "Like count retrieved successfully",
+      200,
+    );
   } catch (error) {
     const status = error.status || 500;
-    return res
-      .status(status)
-      .json(
-        errorResponse(
-          error.message,
-          status,
-          process.env.NODE_ENV === "development" ? error : undefined,
-        ),
-      );
+    return errorResponse(
+      res,
+      error.message,
+      status,
+      process.env.NODE_ENV === "development" ? error : undefined,
+    );
   }
 };
 
