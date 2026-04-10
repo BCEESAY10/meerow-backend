@@ -1,4 +1,4 @@
-const { Story, Episode, User } = require("../models");
+const { Story, Episode, User, Comment, Like } = require("../models");
 const { Op } = require("sequelize");
 const { generateSlug } = require("../utils/slug");
 const { calculateReadTime } = require("../utils/readTime");
@@ -259,6 +259,50 @@ const deleteStory = async (storyId, authorId) => {
       throw error;
     }
 
+    // Get all episodes for this story to delete their associated comments and likes
+    const episodes = await Episode.findAll({
+      where: { story_id: storyId },
+      attributes: ["id"],
+    });
+
+    const episodeIds = episodes.map((ep) => ep.id);
+
+    // Delete all comments and likes for episodes in this story
+    if (episodeIds.length > 0) {
+      await Comment.destroy({
+        where: {
+          [Op.or]: [
+            { content_id: storyId, content_type: "story" },
+            { content_id: { [Op.in]: episodeIds }, content_type: "episode" },
+          ],
+        },
+      });
+
+      await Like.destroy({
+        where: {
+          [Op.or]: [
+            { content_id: storyId, content_type: "story" },
+            { content_id: { [Op.in]: episodeIds }, content_type: "episode" },
+          ],
+        },
+      });
+    } else {
+      // If no episodes, just delete comments and likes for the story itself
+      await Comment.destroy({
+        where: { content_id: storyId, content_type: "story" },
+      });
+
+      await Like.destroy({
+        where: { content_id: storyId, content_type: "story" },
+      });
+    }
+
+    // Delete all episodes associated with the story (cascade delete)
+    await Episode.destroy({
+      where: { story_id: storyId },
+    });
+
+    // Finally, delete the story
     await story.destroy();
     return { message: "Story deleted successfully" };
   } catch (error) {
