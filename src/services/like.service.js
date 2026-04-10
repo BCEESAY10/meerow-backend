@@ -55,13 +55,6 @@ const likeContent = async (userId, contentId, contentType) => {
       content_type: contentType,
     });
 
-    console.log("[DEBUG] Like created:", {
-      id: like.id,
-      user_id: userId,
-      content_id: contentId,
-      content_type: contentType,
-    });
-
     return like;
   } catch (error) {
     throw error;
@@ -109,12 +102,6 @@ const getLikeCount = async (contentId, contentType) => {
         content_id: contentId,
         content_type: contentType,
       },
-    });
-
-    console.log("[DEBUG] getLikeCount query:", {
-      contentId,
-      contentType,
-      count,
     });
 
     return count;
@@ -171,13 +158,6 @@ const hasUserLiked = async (userId, contentId, contentType) => {
         content_id: contentId,
         content_type: contentType,
       },
-    });
-
-    console.log("[DEBUG] hasUserLiked query:", {
-      userId,
-      contentId,
-      contentType,
-      found: !!like,
     });
 
     return !!like;
