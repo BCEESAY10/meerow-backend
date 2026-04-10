@@ -1,4 +1,5 @@
-const { Episode, Story, User } = require("../models");
+const { Episode, Story, User, Comment, Like } = require("../models");
+const { Op } = require("sequelize");
 const { calculateReadTime } = require("../utils/readTime");
 
 // Create a new episode
@@ -72,6 +73,19 @@ const getEpisodeById = async (episodeId) => {
   }
 };
 
+// Get story for episode checks (to verify author)
+const getStoryForEpisodes = async (storyId) => {
+  try {
+    const story = await Story.findByPk(storyId, {
+      attributes: ["id", "author_id"],
+    });
+
+    return story;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Get approved episodes for a story
 const getEpisodesByStoryId = async (storyId, page = 1, limit = 20) => {
   try {
@@ -97,7 +111,12 @@ const getEpisodesByStoryId = async (storyId, page = 1, limit = 20) => {
 };
 
 // Get all episodes for a story (for author - includes all statuses)
-const getEpisodesByStoryIdForAuthor = async (storyId, authorId) => {
+const getEpisodesByStoryIdForAuthor = async (
+  storyId,
+  authorId,
+  page = 1,
+  limit = 20,
+) => {
   try {
     // Verify author owns the story
     const story = await Story.findOne({
@@ -110,12 +129,22 @@ const getEpisodesByStoryIdForAuthor = async (storyId, authorId) => {
       throw error;
     }
 
-    const episodes = await Episode.findAll({
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Episode.findAndCountAll({
       where: { story_id: storyId },
+      offset,
+      limit,
       order: [["episode_number", "ASC"]],
     });
 
-    return episodes;
+    return {
+      total: count,
+      episodes: rows,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   } catch (error) {
     throw error;
   }
@@ -168,20 +197,28 @@ const updateEpisode = async (episodeId, authorId, updateData) => {
       }
     }
 
-    // Update read time if content changed
-    let readTime = episode.read_time_minutes;
-    if (content) {
-      readTime = calculateReadTime(content);
-    }
-
-    await episode.update({
-      title: title || episode.title,
-      episode_number: episode_number || episode.episode_number,
-      content: content || episode.content,
-      read_time_minutes: readTime,
+    // Build update object with only provided fields
+    const updateObject = {
       status: "pending", // Reset to pending on resubmit
       rejection_reason: null,
-    });
+    };
+
+    // Only update fields that are provided
+    if (title !== undefined) {
+      updateObject.title = title;
+    }
+
+    if (episode_number !== undefined) {
+      updateObject.episode_number = episode_number;
+    }
+
+    if (content !== undefined) {
+      updateObject.content = content;
+      // Recalculate read time only if content is updated
+      updateObject.read_time_minutes = calculateReadTime(content);
+    }
+
+    await episode.update(updateObject);
 
     return episode;
   } catch (error) {
@@ -216,6 +253,16 @@ const deleteEpisode = async (episodeId, authorId) => {
       throw error;
     }
 
+    // Delete all comments and likes for this episode first (cascade delete)
+    await Comment.destroy({
+      where: { content_id: episodeId, content_type: "episode" },
+    });
+
+    await Like.destroy({
+      where: { content_id: episodeId, content_type: "episode" },
+    });
+
+    // Then delete the episode
     await episode.destroy();
     return { message: "Episode deleted successfully" };
   } catch (error) {
@@ -226,6 +273,7 @@ const deleteEpisode = async (episodeId, authorId) => {
 module.exports = {
   createEpisode,
   getEpisodeById,
+  getStoryForEpisodes,
   getEpisodesByStoryId,
   getEpisodesByStoryIdForAuthor,
   updateEpisode,
