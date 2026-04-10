@@ -18,7 +18,7 @@ const extractToken = (req) => {
   return null;
 };
 
-// Authenticate middleware - verifies JWT token
+// Authenticate middleware - verifies JWT token (required)
 const authenticate = (req, res, next) => {
   const token = extractToken(req);
 
@@ -43,4 +43,26 @@ const authenticate = (req, res, next) => {
   }
 };
 
+// Optional authenticate middleware - verifies JWT token if present, but doesn't error if missing
+const authenticateOptional = (req, res, next) => {
+  const token = extractToken(req);
+
+  if (!token) {
+    // No token provided, just continue without auth
+    req.user = undefined;
+    return next();
+  }
+
+  try {
+    const decoded = verifyToken(token);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    // Invalid token, but still allow request to continue (user will be undefined)
+    req.user = undefined;
+    next();
+  }
+};
+
 module.exports = authenticate;
+module.exports.authenticateOptional = authenticateOptional;
