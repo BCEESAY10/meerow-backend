@@ -2,6 +2,7 @@ const express = require("express");
 const storyController = require("../controllers/story.controller");
 const episodeController = require("../controllers/episode.controller");
 const authenticate = require("../middlewares/authenticate");
+const { authenticateOptional } = require("../middlewares/authenticate");
 
 const router = express.Router();
 
@@ -38,8 +39,12 @@ router.delete("/:id", authenticate, storyController.deleteStory);
 // Public route - Get single story by slug (for reading) - must be last
 router.get("/:slug", storyController.getStoryBySlug);
 
-// Episode routes - Public (approved episodes only)
-router.get("/:storyId/episodes", episodeController.getEpisodesByStory);
+// Episode routes - Public (approved episodes only) / Private pending for author
+router.get(
+  "/:storyId/episodes",
+  authenticateOptional,
+  episodeController.getEpisodesByStory,
+);
 router.get("/:storyId/episodes/:episodeId", episodeController.getEpisodeById);
 
 // Episode routes - Protected (author only)
