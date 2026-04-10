@@ -19,13 +19,6 @@ const augmentStoryWithLikes = async (story, userId) => {
     ? await likeService.hasUserLiked(userId, storyId, "story")
     : false;
 
-  console.log("[DEBUG] augmentStoryWithLikes:", {
-    storyId,
-    userId,
-    likeCount,
-    userHasLiked,
-  });
-
   return {
     ...storyData,
     likeCount,
