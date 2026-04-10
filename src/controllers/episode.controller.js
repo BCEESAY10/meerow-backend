@@ -1,6 +1,9 @@
 const episodeService = require("../services/episode.service");
 const likeService = require("../services/like.service");
-const { validateEpisode } = require("../validators/episode.validator");
+const {
+  validateEpisodeCreate,
+  validateEpisodeUpdate,
+} = require("../validators/episode.validator");
 const { successResponse, errorResponse } = require("../utils/apiResponse");
 const {
   buildPaginationParams,
@@ -17,13 +20,6 @@ const augmentEpisodeWithLikes = async (episode, userId) => {
   const userHasLiked = userId
     ? await likeService.hasUserLiked(userId, episodeId, "episode")
     : false;
-
-  console.log("[DEBUG] augmentEpisodeWithLikes:", {
-    episodeId,
-    userId,
-    likeCount,
-    userHasLiked,
-  });
 
   return {
     ...episodeData,
@@ -62,7 +58,7 @@ const createEpisode = async (req, res, next) => {
     const { title, episode_number, content } = req.body;
 
     // Validate request
-    const { error, value } = validateEpisode({
+    const { error, value } = validateEpisodeCreate({
       title,
       episode_number,
       content,
@@ -96,7 +92,7 @@ const createEpisode = async (req, res, next) => {
   }
 };
 
-// Get episodes for a story (approved only)
+// Get episodes for a story (approved only for readers, all for author)
 const getEpisodesByStory = async (req, res, next) => {
   try {
     const { storyId } = req.params;
@@ -108,11 +104,31 @@ const getEpisodesByStory = async (req, res, next) => {
       limit,
     );
 
-    const result = await episodeService.getEpisodesByStoryId(
-      storyId,
-      pageNum,
-      limitNum,
-    );
+    // First, get the story to check if the user is the author
+    const story = await episodeService.getStoryForEpisodes(storyId);
+
+    if (!story) {
+      return errorResponse(res, "Story not found", 404);
+    }
+
+    let result;
+
+    // If user is the author, return all episodes (pending, approved, rejected)
+    if (userId && story.author_id === userId) {
+      result = await episodeService.getEpisodesByStoryIdForAuthor(
+        storyId,
+        userId,
+        pageNum,
+        limitNum,
+      );
+    } else {
+      // Otherwise, return only approved episodes (public view)
+      result = await episodeService.getEpisodesByStoryId(
+        storyId,
+        pageNum,
+        limitNum,
+      );
+    }
 
     const episodesWithLikes = await augmentEpisodesWithLikes(
       result.episodes,
@@ -164,12 +180,20 @@ const getEpisodeById = async (req, res, next) => {
 // Update episode
 const updateEpisode = async (req, res, next) => {
   try {
-    const { episodeId } = req.params;
+    const { storyId, episodeId } = req.params;
     const authorId = req.user.id;
     const { title, episode_number, content } = req.body;
 
-    // Validate request
-    const { error, value } = validateEpisode({
+    // Validate request - at least one field must be provided
+    if (!title && !episode_number && !content) {
+      return errorResponse(
+        res,
+        "At least one field (title, episode_number, or content) must be provided",
+        400,
+      );
+    }
+
+    const { error, value } = validateEpisodeUpdate({
       title,
       episode_number,
       content,
