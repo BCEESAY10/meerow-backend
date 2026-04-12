@@ -197,13 +197,21 @@ const getAuthorStories = async (authorId, page = 1, limit = 10) => {
 };
 
 // Update story (only pending or rejected)
-const updateStory = async (storyId, authorId, updateData) => {
+const updateStory = async (storyId, user, updateData) => {
   try {
-    const story = await Story.findOne({
-      where: { id: storyId, author_id: authorId },
-    });
+    const story = await Story.findByPk(storyId);
 
     if (!story) {
+      const error = new Error("Story not found or you do not have permission");
+      error.status = 404;
+      throw error;
+    }
+
+    // Check authorization: must be author or admin
+    const isAuthor = story.author_id === user.id;
+    const isAdmin = user.role === "admin";
+
+    if (!isAuthor && !isAdmin) {
       const error = new Error("Story not found or you do not have permission");
       error.status = 404;
       throw error;
@@ -241,13 +249,21 @@ const updateStory = async (storyId, authorId, updateData) => {
 };
 
 // Delete story (only if pending or rejected)
-const deleteStory = async (storyId, authorId) => {
+const deleteStory = async (storyId, user) => {
   try {
-    const story = await Story.findOne({
-      where: { id: storyId, author_id: authorId },
-    });
+    const story = await Story.findByPk(storyId);
 
     if (!story) {
+      const error = new Error("Story not found or you do not have permission");
+      error.status = 404;
+      throw error;
+    }
+
+    // Check authorization: must be author or admin
+    const isAuthor = story.author_id === user.id;
+    const isAdmin = user.role === "admin";
+
+    if (!isAuthor && !isAdmin) {
       const error = new Error("Story not found or you do not have permission");
       error.status = 404;
       throw error;

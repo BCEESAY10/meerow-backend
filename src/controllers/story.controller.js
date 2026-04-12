@@ -265,7 +265,6 @@ const getStoryById = async (req, res, next) => {
 const updateStory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const authorId = req.user.id;
     const { title, synopsis, genre, content } = req.body;
 
     // Validate request
@@ -281,8 +280,8 @@ const updateStory = async (req, res, next) => {
       return errorResponse(res, error.details[0].message, 400);
     }
 
-    const story = await storyService.updateStory(id, authorId, value);
-    const storyWithLikes = await augmentStoryWithLikes(story, authorId);
+    const story = await storyService.updateStory(id, req.user, value);
+    const storyWithLikes = await augmentStoryWithLikes(story, req.user.id);
 
     return successResponse(res, storyWithLikes, "Story updated successfully");
   } catch (error) {
@@ -300,9 +299,8 @@ const updateStory = async (req, res, next) => {
 const deleteStory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const authorId = req.user.id;
 
-    const result = await storyService.deleteStory(id, authorId);
+    const result = await storyService.deleteStory(id, req.user);
 
     return successResponse(res, result, "Story deleted successfully");
   } catch (error) {

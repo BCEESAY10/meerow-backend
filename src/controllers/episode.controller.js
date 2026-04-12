@@ -181,7 +181,6 @@ const getEpisodeById = async (req, res, next) => {
 const updateEpisode = async (req, res, next) => {
   try {
     const { storyId, episodeId } = req.params;
-    const authorId = req.user.id;
     const { title, episode_number, content } = req.body;
 
     // Validate request - at least one field must be provided
@@ -205,11 +204,14 @@ const updateEpisode = async (req, res, next) => {
 
     const episode = await episodeService.updateEpisode(
       episodeId,
-      authorId,
+      req.user,
       value,
     );
 
-    const episodeWithLikes = await augmentEpisodeWithLikes(episode, authorId);
+    const episodeWithLikes = await augmentEpisodeWithLikes(
+      episode,
+      req.user.id,
+    );
     return successResponse(
       res,
       episodeWithLikes,
@@ -230,9 +232,8 @@ const updateEpisode = async (req, res, next) => {
 const deleteEpisode = async (req, res, next) => {
   try {
     const { episodeId } = req.params;
-    const authorId = req.user.id;
 
-    const result = await episodeService.deleteEpisode(episodeId, authorId);
+    const result = await episodeService.deleteEpisode(episodeId, req.user);
 
     return successResponse(res, result, "Episode deleted successfully");
   } catch (error) {

@@ -151,7 +151,7 @@ const getEpisodesByStoryIdForAuthor = async (
 };
 
 // Update episode (only if pending or rejected)
-const updateEpisode = async (episodeId, authorId, updateData) => {
+const updateEpisode = async (episodeId, user, updateData) => {
   try {
     const episode = await Episode.findByPk(episodeId, {
       include: [
@@ -163,7 +163,19 @@ const updateEpisode = async (episodeId, authorId, updateData) => {
       ],
     });
 
-    if (!episode || episode.story.author_id !== authorId) {
+    if (!episode) {
+      const error = new Error(
+        "Episode not found or you do not have permission",
+      );
+      error.status = 404;
+      throw error;
+    }
+
+    // Check authorization: must be author or admin
+    const isAuthor = episode.story.author_id === user.id;
+    const isAdmin = user.role === "admin";
+
+    if (!isAuthor && !isAdmin) {
       const error = new Error(
         "Episode not found or you do not have permission",
       );
@@ -227,7 +239,7 @@ const updateEpisode = async (episodeId, authorId, updateData) => {
 };
 
 // Delete episode (only if pending or rejected)
-const deleteEpisode = async (episodeId, authorId) => {
+const deleteEpisode = async (episodeId, user) => {
   try {
     const episode = await Episode.findByPk(episodeId, {
       include: [
@@ -239,7 +251,19 @@ const deleteEpisode = async (episodeId, authorId) => {
       ],
     });
 
-    if (!episode || episode.story.author_id !== authorId) {
+    if (!episode) {
+      const error = new Error(
+        "Episode not found or you do not have permission",
+      );
+      error.status = 404;
+      throw error;
+    }
+
+    // Check authorization: must be author or admin
+    const isAuthor = episode.story.author_id === user.id;
+    const isAdmin = user.role === "admin";
+
+    if (!isAuthor && !isAdmin) {
       const error = new Error(
         "Episode not found or you do not have permission",
       );
